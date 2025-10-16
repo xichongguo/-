@@ -1,6 +1,27 @@
 {
   "spider": "",
-  "wallpaper": "xichongyingshi - 2025-10-16 22:45",
+  "wallpaper": "xichongyingshi - 10-16 14:41",
+  "lives": [
+    {
+      "group": "redirect",
+      "channels": [
+        {
+          "name": "live",
+          "urls": [
+            "proxy://do=live&type=txt&ext="
+          ]
+        }
+      ]
+    },
+    {
+      "name": "xichongtv",
+      "type": 3,
+      "url": "https://raw.githubusercontent.com/xichongguo/live-stream/refs/heads/main/live/current.m3u8",
+      "epg": "https://epg.zbds.top/",
+      "logo": "",
+      "categories": "央视,卫视,体育,电影,综艺,地方"
+    }
+  ],
   "sites": [
     {
       "key": "xichong",
@@ -12,57 +33,118 @@
       "filterable": 1
     }
   ],
-  "lives": [
+  "parses": [
     {
-      "name": "xichongtv",
+      "name": "解析聚合",
       "type": 3,
-      "url": "https://raw.githubusercontent.com/xichongguo/live-stream/refs/heads/main/live/current.m3u8",
-      "epg": "https://epg.zbds.top/",
-      "logo": "",
-      "categories": "央视,卫视,体育,电影,综艺,地方"
+      "url": "Demo"
+    },
+    {
+      "name": "Json轮询",
+      "type": 2,
+      "url": "Sequence"
+    },
+    {
+      "name": "巧技",
+      "type": 1,
+      "url": "https://zy.qiaoji8.com/neibu.php?url=",
+      "ext": {
+        "flag": [
+          "qq",
+          "腾讯",
+          "qiyi",
+          "爱奇艺",
+          "奇艺",
+          "youku",
+          "优酷",
+          "sohu",
+          "搜狐",
+          "letv",
+          "乐视",
+          "mgtv",
+          "芒果",
+          "tnmb",
+          "seven",
+          "bilibili"
+        ],
+        "header": {
+          "User-Agent": "okhttp/4.9.1"
+        }
+      }
+    },
+    {
+      "name": "巧技二",
+      "type": 1,
+      "url": "https://zy.qiaoji8.com/gouzi.php?url=",
+      "ext": {
+        "flag": [
+          "qq",
+          "腾讯",
+          "qiyi",
+          "爱奇艺",
+          "奇艺",
+          "youku",
+          "优酷",
+          "sohu",
+          "搜狐",
+          "letv",
+          "乐视",
+          "mgtv",
+          "芒果",
+          "tnmb",
+          "seven",
+          "bilibili",
+          "1905",
+          "NetFilx"
+        ],
+        "header": {
+          "User-Agent": "okhttp/4.9.1"
+        }
+      }
+    },
+    {
+      "name": "巧技三",
+      "type": 1,
+      "url": "https://zy.qiaoji8.com/xiafan.php?url=",
+      "ext": {
+        "flag": [
+          "QD4K",
+          "iyf",
+          "duanju",
+          "gzcj",
+          "GTV",
+          "GZYS",
+          "weggz",
+          "Ace"
+        ],
+        "header": {
+          "User-Agent": "okhttp/4.9.1"
+        }
+      }
     }
   ],
   "flags": [
     "youku",
+    "qq",
+    "QQ",
     "iqiyi",
-    "tencent",
-    "mgtv",
+    "qiyi",
+    "letv",
     "sohu",
     "pptv",
-    "bilibili",
-    "qq",
-    "letv",
+    "PPTV",
+    "mgtv",
     "wasu",
-    "cctv",
-    "cntv"
-  ],
-  "rules": [
-    {
-      "name": "去广告",
-      "type": 0,
-      "url": "",
-      "host": "",
-      "rule": [
-        "广告",
-        "赞助",
-        "会员",
-        "VIP",
-        "弹幕",
-        ".css",
-        ".js"
-      ]
-    },
-    {
-      "name": "跳转",
-      "type": 1,
-      "url": "",
-      "host": "",
-      "rule": [
-        "redirect",
-        "302",
-        "location"
-      ]
-    }
+    "bilibili",
+    "m1905",
+    "seven",
+    "m78",
+    "mtv",
+    "sjs",
+    "dbs",
+    "yds",
+    "HNB",
+    "JL4K"
   ],
   "ijk": [
     {
@@ -77,12 +159,127 @@
           "category": 4,
           "name": "overlay-format",
           "value": "842225234"
+        },
+        {
+          "category": 4,
+          "name": "framedrop",
+          "value": "1"
+        },
+        {
+          "category": 4,
+          "name": "soundtouch",
+          "value": "1"
+        },
+        {
+          "category": 4,
+          "name": "start-on-prepared",
+          "value": "1"
+        },
+        {
+          "category": 1,
+          "name": "http-detect-range-support",
+          "value": "0"
+        },
+        {
+          "category": 1,
+          "name": "fflags",
+          "value": "fastseek"
+        },
+        {
+          "category": 2,
+          "name": "skip_loop_filter",
+          "value": "48"
+        },
+        {
+          "category": 4,
+          "name": "reconnect",
+          "value": "1"
+        },
+        {
+          "category": 4,
+          "name": "enable-accurate-seek",
+          "value": "0"
+        },
+        {
+          "category": 4,
+          "name": "mediacodec",
+          "value": "0"
+        },
+        {
+          "category": 4,
+          "name": "mediacodec-auto-rotate",
+          "value": "0"
+        },
+        {
+          "category": 4,
+          "name": "mediacodec-handle-resolution-change",
+          "value": "0"
+        },
+        {
+          "category": 4,
+          "name": "mediacodec-hevc",
+          "value": "0"
+        },
+        {
+          "category": 1,
+          "name": "dns_cache_timeout",
+          "value": "600000000"
         }
       ]
     },
     {
       "group": "硬解码",
       "options": [
+        {
+          "category": 4,
+          "name": "opensles",
+          "value": "0"
+        },
+        {
+          "category": 4,
+          "name": "overlay-format",
+          "value": "842225234"
+        },
+        {
+          "category": 4,
+          "name": "framedrop",
+          "value": "1"
+        },
+        {
+          "category": 4,
+          "name": "soundtouch",
+          "value": "1"
+        },
+        {
+          "category": 4,
+          "name": "start-on-prepared",
+          "value": "1"
+        },
+        {
+          "category": 1,
+          "name": "http-detect-range-support",
+          "value": "0"
+        },
+        {
+          "category": 1,
+          "name": "fflags",
+          "value": "fastseek"
+        },
+        {
+          "category": 2,
+          "name": "skip_loop_filter",
+          "value": "48"
+        },
+        {
+          "category": 4,
+          "name": "reconnect",
+          "value": "1"
+        },
+        {
+          "category": 4,
+          "name": "enable-accurate-seek",
+          "value": "0"
+        },
         {
           "category": 4,
           "name": "mediacodec",
@@ -92,29 +289,26 @@
           "category": 4,
           "name": "mediacodec-auto-rotate",
           "value": "1"
+        },
+        {
+          "category": 4,
+          "name": "mediacodec-handle-resolution-change",
+          "value": "1"
+        },
+        {
+          "category": 4,
+          "name": "mediacodec-hevc",
+          "value": "1"
+        },
+        {
+          "category": 1,
+          "name": "dns_cache_timeout",
+          "value": "600000000"
         }
       ]
     }
   ],
   "ads": [
-    "https://api.nxflv.com",
-    "https://hd.13tv.top",
-    "https://api.xn--vhq61o3bqtd.top",
-    "https://api.vip123kan.vip",
-    "https://api.okmedcos.com",
-    "https://api.jiexi10.me"
-  ],
-  "categories": {
-    "qq": "腾讯",
-    "tencent": "腾讯",
-    "iqiyi": "爱奇艺",
-    "qiyi": "爱奇艺",
-    "youku": "优酷",
-    "sohu": "搜狐",
-    "letv": "乐视",
-    "mgtv": "芒果",
-    "wasu": "华数",
-    "cctv": "央视",
-    "cntv": "央视"
-  }
+    "43.248.128.138"
+  ]
 }
