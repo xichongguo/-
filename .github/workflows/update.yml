@@ -5,9 +5,8 @@ on:
   schedule:
     - cron: "0 23,9 * * *"
 
-# ✅ 关键修复：添加写入权限
 permissions:
-  contents: write  # 允许提交和推送
+  contents: write
 
 jobs:
   update-config:
@@ -15,9 +14,6 @@ jobs:
     steps:
       - name: 检出仓库
         uses: actions/checkout@v4
-        with:
-          # ✅ 关键修复：使用个人 Token 或增强权限
-          token: ${{ secrets.GITHUB_TOKEN }}
 
       - name: 设置 Python 环境
         uses: actions/setup-python@v5
@@ -25,8 +21,7 @@ jobs:
           python-version: "3.11"
 
       - name: 安装依赖
-        run: |
-          pip install requests
+        run: pip install requests
 
       - name: 下载并更新配置
         run: |
@@ -51,28 +46,39 @@ jobs:
               res = requests.get(CONFIG_URL, headers={'User-Agent': 'TVBox-Updater'}, timeout=10)
               res.raise_for_status()
               data = res.json()
+              print("✅ 成功获取远程配置")
           except Exception as e:
               print(f"❌ 获取配置失败: {e}")
               exit(1)
 
+          # 调试：打印原始站点名
+          if 'sites' in data and data['sites']:
+              print(f"🔍 原始站点名: {data['sites'][0]['name']}")
+          else:
+              print("⚠️ 未找到 sites 字段")
+
+          # 添加直播源
           if 'lives' not in data:
               data['lives'] = []
+              print("🔧 初始化 lives 列表")
 
-          # 添加直播源（避免重复）
           if not any(l.get('url') == NEW_LIVE['url'] for l in data['lives']):
               data['lives'].append(NEW_LIVE)
               print("✅ 已添加直播源")
 
-          # 统一设置 EPG
+          # 设置 EPG
           for live in data.get('lives', []):
               if 'epg' in live:
                   live['epg'] = "https://epg.zbds.top/"
 
-          # 修改第一个站点名称
+          # 修改站点名
           if 'sites' in data and data['sites']:
               data['sites'][0]['name'] = "西充影视"
+              print("✅ 站点名称已改为: 西充影视")
+          else:
+              print("❌ 无法修改站点名：sites 不存在")
 
-          # 更新壁纸时间
+          # 更新壁纸
           if 'wallpaper' in data:
               data['wallpaper'] = f"西充影视 - {datetime.now().strftime('%m-%d %H:%M')}"
 
@@ -80,9 +86,9 @@ jobs:
           try:
               with open(OUTPUT_FILE, 'w', encoding='utf-8') as f:
                   json.dump(data, f, ensure_ascii=False, indent=2)
-              print(f"✅ 成功生成: {OUTPUT_FILE}")
+              print(f"✅ 文件已生成: {OUTPUT_FILE}")
           except Exception as e:
-              print(f"❌ 保存失败: {e}")
+              print(f"❌ 保存文件失败: {e}")
               exit(1)
           EOF
 
@@ -91,11 +97,5 @@ jobs:
           git config user.email "action@github.com"
           git config user.name "GitHub Action"
           git add 西充影视.json
-          # 检查是否有变化
-          if git diff --cached --name-only | grep -q "西充影视.json"; then
-            git commit -m "🔄 自动更新: 西充影视.json"
-            git push
-            echo "✅ 推送成功"
-          else
-            echo "➡️ 文件未变化，跳过推送"
-          fi
+          git commit -m "🔄 自动更新: 西充影视.json [$(date '+%Y%m%d%H%M%S')]" --allow-empty
+          git push
