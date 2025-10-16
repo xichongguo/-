@@ -1,169 +1,85 @@
-name: Update TVBox Config
-
-on:
-  workflow_dispatch:
-  schedule:
-    - cron: "0 23,9 * * *"  # 每天 07:00 和 17:00 UTC+8
-
-permissions:
-  contents: write
-
-jobs:
-  update-config:
-    runs-on: ubuntu-latest
-    steps:
-      - name: Checkout Repository
-        uses: actions/checkout@v4
-        with:
-          # 🔁 必须开启，否则 git pull 失败
-          fetch-depth: 0
-
-      - name: Set up Python
-        uses: actions/setup-python@v5
-        with:
-          python-version: "3.11"
-
-      - name: Install Dependencies
-        run: |
-          pip install requests
-
-      - name: Fetch and Update Config
-        run: |
-          python << 'EOF'
-          import requests
-          import json
-          from datetime import datetime
-
-          # === 源配置地址（支持多源 fallback）===
-          SOURCES = [
-              "http://cdn.qiaoji8.com/tvbox.json",
-              "https://raw.githubusercontent.com/xichongguo/tvbox-backup/main/tvbox.json"
+{
+  "spider": "",
+  "wallpaper": "https://xichongguo.github.io/xichongys/wallpaper.jpg",
+  "sites": [
+    {
+      "key": "xichong",
+      "name": "西充影视",
+      "type": 1,
+      "api": "http://cdn.qiaoji8.com/tvbox.php",
+      "searchable": 1,
+      "quickSearch": 1,
+      "filterable": 1
+    }
+  ],
+  "lives": [
+    {
+      "group": "直播频道",
+      "channels": [
+        {
+          "name": "CCTV1",
+          "urls": [
+            "https://cctv1.example.com/live.m3u8"
           ]
-
-          # === 输出文件名 ===
-          OUTPUT_FILE = "xichongyingshi.json"
-
-          # === 要添加的直播源 ===
-          NEW_LIVE = {
-              "name": "xichongtv",
-              "type": 3,
-              "url": "https://raw.githubusercontent.com/xichongguo/live-stream/refs/heads/main/live/current.m3u8",
-              "epg": "https://epg.zbds.top/",
-              "logo": "",
-              "categories": "央视,卫视,体育,电影,综艺,地方"
-          }
-
-          def fetch_from_sources():
-              """尝试从多个源获取配置"""
-              for i, url in enumerate(SOURCES):
-                  try:
-                      print(f"🔍 [{i+1}/{len(SOURCES)}] 请求: {url}")
-                      res = requests.get(
-                          url,
-                          headers={'User-Agent': 'TVBox-Updater'},
-                          timeout=15,
-                          verify=False  # 忽略 SSL 证书问题（兼容性）
-                      )
-                      print(f"   💡 状态码: {res.status_code}")
-                      if res.status_code == 200:
-                          text = res.text.strip()
-                          if text.startswith(('{', '[')):
-                              print(f"   ✅ 响应为 JSON，长度: {len(text)}")
-                              return json.loads(text), url
-                          else:
-                              print(f"   ❌ 响应不是 JSON: {text[:200]}")
-                      else:
-                          print(f"   ❌ HTTP 错误: {res.status_code}")
-                  except Exception as e:
-                      print(f"   ❌ 异常: {e}")
-              return None, None
-
-          # 获取配置
-          data, final_url = fetch_from_sources()
-          if not data:
-              print("💀 所有源均失败，终止构建")
-              exit(1)
-          print(f"✅ 成功从 {final_url} 获取配置")
-
-          # 强制设置影视站
-          data['sites'] = [
-              {
-                  "key": "xichong",
-                  "name": "西充影视",
-                  "type": 1,
-                  "api": "http://cdn.qiaoji8.com/tvbox.php",
-                  "searchable": 1,
-                  "quickSearch": 1,
-                  "filterable": 1
-              }
+        },
+        {
+          "name": "CCTV2",
+          "urls": [
+            "https://cctv2.example.com/live.m3u8"
           ]
-          print("✅ 影视站已设置")
-
-          # 清空 spider 防止 TVBox 崩溃
-          if 'spider' in data:
-              data['spider'] = ""
-              print("🔧 spider 字段已清空")
-
-          # 确保 lives 存在
-          if 'lives' not in data:
-              data['lives'] = []
-              print("🔧 初始化 lives 列表")
-
-          # 添加直播源（避免重复）
-          if not any(l.get('url') == NEW_LIVE['url'] for l in data['lives']):
-              data['lives'].append(NEW_LIVE)
-              print("✅ 直播源已添加: xichongtv")
-          else:
-              print("ℹ️  直播源已存在，跳过添加")
-
-          # 统一设置 EPG
-          for live in data.get('lives', []):
-              if 'epg' in live:
-                  live['epg'] = "https://epg.zbds.top/"
-
-          # 更新壁纸（显示更新时间）
-          if 'wallpaper' in data:
-              data['wallpaper'] = f"xichongyingshi - {datetime.now().strftime('%m-%d %H:%M')}"
-
-          # 保存文件
-          try:
-              with open(OUTPUT_FILE, 'w', encoding='utf-8') as f:
-                  json.dump(data, f, ensure_ascii=False, indent=2)
-              print(f"✅ 配置文件已生成: {OUTPUT_FILE}")
-          except Exception as e:
-              print(f"❌ 文件写入失败: {e}")
-              exit(1)
-          EOF
-
-      # ================================
-      # ✅ 提交并推送（防冲突）
-      # ================================
-      - name: Commit and Push
-        run: |
-          git config user.email "action@github.com"
-          git config user.name "GitHub Action"
-
-          # 添加文件
-          git add xichongyingshi.json
-
-          # 检查是否有更改
-          if git diff-index --quiet HEAD --; then
-            echo "🟡 无更改，无需提交"
-            exit 0
-          fi
-
-          # 提交
-          git commit -m "🔄 Update: xichongyingshi.json [$(date '+%Y%m%d%H%M%S')]"
-
-          # 🔁 先拉取再推送，解决并发冲突
-          echo "🔁 正在拉取最新代码..."
-          git pull origin main --rebase || {
-            echo "❌ 拉取失败，请检查合并冲突"
-            exit 1
-          }
-
-          # 推送
-          echo "🚀 正在推送..."
-          git push origin main
-
-          echo "✅ 更新成功！"
+        },
+        {
+          "name": "xichongtv",
+          "urls": [
+            "https://raw.githubusercontent.com/xichongguo/live-stream/refs/heads/main/live/current.m3u8"
+          ]
+        }
+      ]
+    }
+  ],
+  "rules": [
+    {
+      "name": "广告过滤",
+      "hosts": [
+        "*.ads.com",
+        "*.ad.com"
+      ],
+      "regex": [
+        "广告",
+        "赞助",
+        "VIP",
+        "会员"
+      ]
+    }
+  ],
+  "ijk": [
+    {
+      "group": "软解码",
+      "options": [
+        {
+          "category": 4,
+          "name": "opensles",
+          "value": "0"
+        }
+      ]
+    }
+  ],
+  "ads": [
+    "https://api.example.com/ads"
+  ],
+  "categories": {
+    "qq": "腾讯",
+    "tencent": "腾讯",
+    "iqiyi": "爱奇艺",
+    "youku": "优酷"
+  },
+  "flags": [
+    "youku",
+    "iqiyi",
+    "tencent",
+    "mgtv",
+    "sohu",
+    "pptv",
+    "bilibili"
+  ]
+}
