@@ -1,9 +1,9 @@
 name: 更新西充影视TVBox配置
 
 on:
-  workflow_dispatch:
+  workflow_dispatch:  # 允许手动触发
   schedule:
-    - cron: '0 23,9 * * *'  # UTC 23:00 和 09:00 → 北京时间 07:00 和 17:00
+    - cron: '0 23,9 * * *'  # UTC时间 23:00 和 09:00 → 北京时间 07:00 和 17:00
 
 jobs:
   update-config:
@@ -30,6 +30,7 @@ jobs:
           import os
           from datetime import datetime
 
+          # 配置
           CONFIG_URL = "http://cdn.qiaoji8.com/tvbox.json"
           OUTPUT_FILE = "西充影视.json"
 
@@ -83,4 +84,9 @@ jobs:
           git config --local user.email "action@github.com"
           git config --local user.name "GitHub Action"
           git add 西充影视.json
-          git diff --quiet && git diff --staged --quiet || (git commit -m "🔄 自动更新: 西充影视.json [$(date '+%Y-%m-%d %H:%M:%S')]" && git push)
+          if git diff --cached --name-only | grep -q "西充影视.json"; then
+            git commit -m "🔄 自动更新: 西充影视.json [$(date '+%Y-%m-%d %H:%M:%S')]"
+            git push
+          else
+            echo "➡️ 文件未变化，跳过提交"
+          fi
