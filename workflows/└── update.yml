@@ -1,0 +1,86 @@
+name: 更新西充影视TVBox配置
+
+on:
+  workflow_dispatch:
+  schedule:
+    - cron: '0 23,9 * * *'  # UTC 23:00 和 09:00 → 北京时间 07:00 和 17:00
+
+jobs:
+  update-config:
+    runs-on: ubuntu-latest
+    steps:
+      - name: 检出仓库
+        uses: actions/checkout@v4
+
+      - name: 设置 Python 环境
+        uses: actions/setup-python@v5
+        with:
+          python-version: '3.11'
+
+      - name: 安装依赖
+        run: |
+          python -m pip install --upgrade pip
+          pip install requests
+
+      - name: 下载并更新配置
+        run: |
+          python <<EOF
+          import requests
+          import json
+          import os
+          from datetime import datetime
+
+          CONFIG_URL = "http://cdn.qiaoji8.com/tvbox.json"
+          OUTPUT_FILE = "西充影视.json"
+
+          NEW_LIVE = {
+              "name": "西瓜直播",
+              "type": 3,
+              "url": "https://raw.githubusercontent.com/xichongguo/live-stream/refs/heads/main/live/current.m3u8",
+              "epg": "https://epg.zbds.top/",
+              "logo": "",
+              "categories": "央视,卫视,体育,电影,综艺,地方"
+          }
+
+          try:
+              headers = {'User-Agent': 'Mozilla/5.0 (GitHub Actions)'}
+              res = requests.get(CONFIG_URL, headers=headers, timeout=15)
+              res.raise_for_status()
+              data = res.json()
+          except Exception as e:
+              print(f"❌ 获取配置失败: {e}")
+              exit(1)
+
+          if 'lives' not in data:
+              data['lives'] = []
+
+          urls = [l.get('url') for l in data['lives'] if 'url' in l]
+          if NEW_LIVE['url'] not in urls:
+              data['lives'].append(NEW_LIVE)
+              print("✅ 已添加直播源")
+
+          for live in data['lives']:
+              if 'epg' in live:
+                  live['epg'] = "https://epg.zbds.top/"
+
+          if 'sites' in data and len(data['sites']) > 0:
+              data['sites'][0]['name'] = "西充影视"
+
+          if 'wallpaper' in data:
+              data['wallpaper'] = f"西充影视 - {datetime.now().strftime('%m-%d %H:%M')}"
+
+          try:
+              with open(OUTPUT_FILE, 'w', encoding='utf-8') as f:
+                  json.dump(data, f, ensure_ascii=False, indent=2)
+              print(f"✅ 成功生成: {OUTPUT_FILE}")
+          except Exception as e:
+              print(f"❌ 保存文件失败: {e}")
+              exit(1)
+          EOF
+
+      - name: 提交并推送更新
+        run: |
+          git config --local user.email "action@github.com"
+          git config --local user.name "GitHub Action"
+          git add 西充影视.json
+          git diff --quiet && git diff --staged --quiet || (git commit -m "🔄 自动更新: 西充影视.json [$(date '+%Y-%m-%d %H:%M:%S')]" && git push)
