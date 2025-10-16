@@ -3,7 +3,7 @@ name: Update TVBox Config
 on:
   workflow_dispatch:
   schedule:
-    - cron: "0 23,9 * * *"  # 每天 07:00 和 17:00 UTC+8
+    - cron: "0 23,9 * * *"  # UTC+8 07:00 & 17:00
 
 permissions:
   contents: write
@@ -31,12 +31,14 @@ jobs:
           import json
           from datetime import datetime
 
-          # 源配置地址
-          CONFIG_URL = "http://cdn.qiaoji8.com/tvbox.json"
-          # ✅ 输出文件名：拼音
+          # ✅ 双源配置（主源 + GitHub 备份）
+          SOURCES = [
+              "http://cdn.qiaoji8.com/tvbox.json",
+              "https://raw.githubusercontent.com/xichongguo/tvbox-backup/main/tvbox.json"
+          ]
+
           OUTPUT_FILE = "xichongyingshi.json"
 
-          # ✅ 直播源：名称改为 xichongtv
           NEW_LIVE = {
               "name": "xichongtv",
               "type": 3,
@@ -46,20 +48,35 @@ jobs:
               "categories": "央视,卫视,体育,电影,综艺,地方"
           }
 
+          def fetch_from_sources():
+              for url in SOURCES:
+                  try:
+                      print(f"📡 尝试获取: {url}")
+                      res = requests.get(url, headers={'User-Agent': 'TVBox-Updater'}, timeout=15)
+                      res.raise_for_status()
+                      if res.text.strip().startswith('{') or res.text.strip().startswith('['):
+                          return res.json()
+                      else:
+                          print(f"⚠️  返回非 JSON: {res.text[:100]}...")
+                  except Exception as e:
+                      print(f"❌ 失败: {url} -> {e}")
+              return None
+
           try:
-              res = requests.get(CONFIG_URL, headers={'User-Agent': 'TVBox-Updater'}, timeout=10)
-              res.raise_for_status()
-              data = res.json()
-              print("✅ Successfully fetched remote config")
+              data = fetch_from_sources()
+              if not data:
+                  print("💀 所有源均失败，终止")
+                  exit(1)
+              print("✅ 成功获取配置")
           except Exception as e:
-              print(f"❌ Failed to fetch config: {e}")
+              print(f"❌ 获取配置失败: {e}")
               exit(1)
 
-          # ✅ 强制设置影视站（防止原始配置无 sites）
+          # 强制设置影视站
           data['sites'] = [
               {
                   "key": "xichong",
-                  "name": "西充影视",  # 显示名称仍为中文
+                  "name": "西充影视",
                   "type": 1,
                   "api": "http://cdn.qiaoji8.com/tvbox.php",
                   "searchable": 1,
@@ -67,39 +84,33 @@ jobs:
                   "filterable": 1
               }
           ]
-          print("✅ Site set to 西充影视")
+          print("✅ 影视站已设置")
 
-          # ✅ 清空 spider 防止 TVBox 崩溃
+          # 清空 spider
           if 'spider' in data:
               data['spider'] = ""
-              print("🔧 Cleared spider field")
+              print("🔧 spider 已清空")
 
-          # 确保 lives 存在
           if 'lives' not in data:
               data['lives'] = []
-              print("🔧 Initialized lives list")
 
-          # 添加直播源（避免重复）
           if not any(l.get('url') == NEW_LIVE['url'] for l in data['lives']):
               data['lives'].append(NEW_LIVE)
-              print("✅ Live source added: xichongtv")  # ✅ 日志也改为 xichongtv
+              print("✅ 直播源已添加: xichongtv")
 
-          # 统一设置 EPG
           for live in data.get('lives', []):
               if 'epg' in live:
                   live['epg'] = "https://epg.zbds.top/"
 
-          # ✅ 更新壁纸，显示拼音文件名和时间
           if 'wallpaper' in data:
               data['wallpaper'] = f"xichongyingshi - {datetime.now().strftime('%m-%d %H:%M')}"
 
-          # 保存文件
           try:
               with open(OUTPUT_FILE, 'w', encoding='utf-8') as f:
                   json.dump(data, f, ensure_ascii=False, indent=2)
-              print(f"✅ Config saved: {OUTPUT_FILE}")
+              print(f"✅ 文件已生成: {OUTPUT_FILE}")
           except Exception as e:
-              print(f"❌ Failed to save file: {e}")
+              print(f"❌ 文件写入失败: {e}")
               exit(1)
           EOF
 
@@ -107,7 +118,6 @@ jobs:
         run: |
           git config user.email "action@github.com"
           git config user.name "GitHub Action"
-          # ✅ 添加新文件名
           git add xichongyingshi.json
           git commit -m "🔄 Update: xichongyingshi.json [$(date '+%Y%m%d%H%M%S')]" --allow-empty
           git push
