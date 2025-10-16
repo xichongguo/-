@@ -1,83 +1,76 @@
-name: 更新西充影视TVBox配置
+name: Update TVBox Config
 
 on:
-  workflow_dispatch: {}
+  workflow_dispatch:
   schedule:
     - cron: "0 23,9 * * *"
 
 jobs:
-  update-config:
+  update:
     runs-on: ubuntu-latest
     steps:
-      - name: 检出仓库
+      - name: Checkout
         uses: actions/checkout@v4
 
-      - name: 设置 Python 环境
+      - name: Set up Python
         uses: actions/setup-python@v5
         with:
-          python-version: "3.11"
+          python-version: 3.11
 
-      - name: 安装依赖
-        run: |
-          pip install requests
+      - name: Install requests
+        run: pip install requests
 
-      - name: 下载并更新配置
+      - name: Fetch and update config
         run: |
           python << 'EOF'
-          import requests
-          import json
+          import requests, json, os
           from datetime import datetime
 
-          CONFIG_URL = "http://cdn.qiaoji8.com/tvbox.json"
-          OUTPUT_FILE = "西充影视.json"
+          url = "http://cdn.qiaoji8.com/tvbox.json"
+          output = "西充影视.json"
 
-          NEW_LIVE = {
-              "name": "西瓜直播",
-              "type": 3,
-              "url": "https://raw.githubusercontent.com/xichongguo/live-stream/refs/heads/main/live/current.m3u8",
-              "epg": "https://epg.zbds.top/",
-              "logo": "",
-              "categories": "央视,卫视,体育,电影,综艺,地方"
+          new_live = {
+            "name": "西瓜直播",
+            "type": 3,
+            "url": "https://raw.githubusercontent.com/xichongguo/live-stream/refs/heads/main/live/current.m3u8",
+            "epg": "https://epg.zbds.top/",
+            "logo": "",
+            "categories": "体育,电影,综艺"
           }
 
           try:
-              res = requests.get(CONFIG_URL, headers={'User-Agent': 'GitHub Actions'}, timeout=10)
-              res.raise_for_status()
-              data = res.json()
+            res = requests.get(url, headers={'User-Agent': 'TVBox-Updater'}, timeout=10)
+            data = res.json()
           except Exception as e:
-              print(f"❌ 获取失败: {e}")
-              exit(1)
+            print(f"❌ Fail: {e}")
+            exit(1)
 
           if 'lives' not in data:
-              data['lives'] = []
+            data['lives'] = []
 
-          if NEW_LIVE['url'] not in [l.get('url') for l in data['lives']]:
-              data['lives'].append(NEW_LIVE)
-              print("✅ 添加直播源")
+          if not any(l.get('url') == new_live['url'] for l in data['lives']):
+            data['lives'].append(new_live)
+            print("✅ Live added")
 
           for live in data.get('lives', []):
-              if 'epg' in live:
-                  live['epg'] = "https://epg.zbds.top/"
+            if 'epg' in live:
+              live['epg'] = "https://epg.zbds.top/"
 
           if 'sites' in data and data['sites']:
-              data['sites'][0]['name'] = "西充影视"
-
-          if 'wallpaper' in data:
-              data['wallpaper'] = f"西充影视 - {datetime.now().strftime('%m-%d %H:%M')}"
+            data['sites'][0]['name'] = "西充影视"
 
           try:
-              with open(OUTPUT_FILE, 'w', encoding='utf-8') as f:
-                  json.dump(data, f, ensure_ascii=False, indent=2)
-              print(f"✅ 生成成功: {OUTPUT_FILE}")
+            with open(output, 'w', encoding='utf-8') as f:
+              json.dump(data, f, ensure_ascii=False, indent=2)
+            print(f"✅ Saved: {output}")
           except Exception as e:
-              print(f"❌ 保存失败: {e}")
-              exit(1)
+            print(f"❌ Save failed: {e}")
           EOF
 
-      - name: 提交更新
+      - name: Commit file
         run: |
           git config user.email "action@github.com"
           git config user.name "GitHub Action"
           git add 西充影视.json
-          git diff --quiet && git diff --cached --quiet || git commit -m "🔄 更新: 西充影视.json"
+          git diff --quiet && git diff --cached --quiet || git commit -m "auto: update config $(date)"
           git push
