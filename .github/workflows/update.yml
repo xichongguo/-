@@ -2,9 +2,8 @@ name: 自动更新 xichongys.json
 
 on:
   schedule:
-    # 北京时间每天 08:00 和 19:00（对应 UTC 00:00 和 11:00）
-    - cron: '0 0,11 * * *'
-  workflow_dispatch:  # 允许手动触发
+    - cron: '0 0,11 * * *'  # 北京时间 08:00 和 19:00
+  workflow_dispatch:
 
 jobs:
   update:
@@ -21,8 +20,7 @@ jobs:
           python-version: '3.10'
 
       - name: 安装依赖
-        run: |
-          pip install requests
+        run: pip install requests
 
       - name: 运行生成脚本
         run: python generate_xichongys.py
