@@ -1,44 +1,34 @@
-name: 自动更新 xichongys.json
+import json
+import requests
 
-on:
-  schedule:
-    # 每天 UTC 时间凌晨 2 点运行（北京时间上午 10 点）
-    - cron: '0 2 * * *'
-  workflow_dispatch:  # 允许手动触发
+def main():
+    source_url = "http://cdn.qiaoji8.com/tvbox.json"
+    live_url = "https://gh-proxy.com/https://raw.githubusercontent.com/xichongguo/live-stream/refs/heads/main/live/current.m3u8"
+    
+    print("📥 正在获取原始配置...")
+    resp = requests.get(source_url)
+    resp.raise_for_status()
+    data = resp.json()
 
-jobs:
-  update:
-    runs-on: ubuntu-latest
-    steps:
-      - name: 检出代码
-        uses: actions/checkout@v4
-        with:
-          token: ${{ secrets.GITHUB_TOKEN }}
+    new_entry = {
+        "group": "GitHub 直播",
+        "channels": [
+            {
+                "name": "xichongguo 直播源",
+                "urls": [live_url]
+            }
+        ]
+    }
 
-      - name: 设置 Python
-        uses: actions/setup-python@v5
-        with:
-          python-version: '3.10'
+    if "lives" not in data or not isinstance(data["lives"], list):
+        data["lives"] = []
 
-      - name: 安装依赖
-        run: |
-          pip install requests
+    data["lives"].insert(0, new_entry)
 
-      - name: 运行生成脚本
-        run: python generate_xichongys.py
+    with open("xichongys.json", "w", encoding="utf-8") as f:
+        json.dump(data, f, ensure_ascii=False, indent=2)
 
-      - name: 配置 Git 用户
-        run: |
-          git config --global user.name "github-actions[bot]"
-          git config --global user.email "github-actions[bot]@users.noreply.github.com"
+    print("✅ 已成功生成文件：xichongys.json")
 
-      - name: 提交并推送更改（仅当文件有变动）
-        run: |
-          git add xichongys.json
-          if git diff --cached --quiet; then
-            echo "✅ xichongys.json 无变化，无需提交。"
-          else
-            git commit -m "🤖 自动更新 xichongys.json"
-            git push
-            echo "✅ 已成功推送更新！"
-          fi
+if __name__ == "__main__":
+    main()
