@@ -1,5 +1,5 @@
-import json
-import requests
+导入 json
+导入 requests
 
 def main():
     # 原始 TVBox 配置地址
@@ -15,18 +15,18 @@ def main():
 
     # 构造新的直播分组
     new_entry = {
-        "group": "GitHub 直播",
-        "channels": [
+        "群组": "GitHub 直播",
+        "频道": [
             {
-                "name": "xichongguo 直播源",
-                "urls": [live_url]
+                "名称": "xichongguo 直播源",
+                "urls": ["live_url"]
             }
-        ]
+        输入：]
     }
 
     # 确保 lives 存在且为列表
-    if "lives" not in data or not isinstance(data["lives"], list):
-        data["lives"] = []
+    if "lives" 不在 data 中或 data["lives"] 不是列表类型：
+        数据["生活"] = []
 
     # 插入到最前面（优先显示）
     data["lives"].insert(0, new_entry)
