@@ -12,8 +12,11 @@ jobs:
   update:
     runs-on: ubuntu-latest
     steps:
-      - name: 检出代码
+      - name: 检出代码（带完整历史）
         uses: actions/checkout@v4
+        with:
+          token: ${{ secrets.GITHUB_TOKEN }}
+          fetch-depth: 0  # 获取全部历史，避免浅层克隆问题
 
       - name: 设置 Python
         uses: actions/setup-python@v5
@@ -31,13 +34,15 @@ jobs:
           git config --global user.name "github-actions[bot]"
           git config --global user.email "github-actions[bot]@users.noreply.github.com"
 
-      - name: 提交并推送更改（仅当文件有变动）
+      - name: 提交并推送更改（自动处理冲突）
         run: |
           git add xichongys.json
           if git diff --cached --quiet; then
             echo "✅ xichongys.json 无变化，无需提交。"
           else
             git commit -m "🤖 自动更新 xichongys.json"
+            # 先拉取最新变更并 rebase（避免冲突）
+            git pull --rebase origin main
             git push
             echo "✅ 已成功推送更新！"
           fi
